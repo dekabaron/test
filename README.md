@@ -29,3 +29,6 @@ Test Score: 369.08 RMSE
   Recall =  0.6074074074074074  
   F1 Score =  0.5394736842105263  
   Accuracy =  0.5070422535211268  
+
+### Requirements
+requirements.txtに記載。
