@@ -1,4 +1,11 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""
+Created on Wed May 16 21:34:55 2018
+
+@author: baron
+"""
+import math
 import numpy as np
 import pandas
 import matplotlib.pyplot as plt
@@ -6,9 +13,9 @@ from sklearn import preprocessing
 from keras.models import Sequential
 from keras.layers.core import Dense, Activation
 from keras.layers.recurrent import LSTM
-import tensorflow as tf
+from sklearn.metrics import mean_squared_error
 
-look_back = 10
+look_back = 2
 in_out_neurons = 1
 hidden_neurons = 100
 
@@ -35,7 +42,10 @@ if __name__ == "__main__":
 
 
   # 終値のデータを標準化
-  data['close'] = preprocessing.scale(data['close']) #スケール化
+  close_max = max(data['close'])
+  close_min = min(data['close'])
+  
+  data['close'] = (data['close']- close_min) / (close_max - close_min) #スケール化
   data = data.sort_values(by='date') 
   data = data.reset_index(drop=True)
   data = data.loc[:, ['date', 'close']] #dateとcloseの列のみの値を抽出
@@ -56,10 +66,15 @@ if __name__ == "__main__":
   model.fit(x_train, y_train, batch_size=50, epochs=10) #学習
 
 
-  Z = x_train[-1:]  # trainデータの一番最後を切り出し
+  
   predicted = []
+  predicted = model.predict(x_test)
+ 
 
+  """
   #1日ごとに予測を行う
+  Z = x_train[-1:]  # trainデータの一番最後を切り出し
+  
   for i in range(test_size - look_back):
     z_ = Z[-1:]
     y_ = model.predict(z_) #翌日の株価を予測
@@ -68,7 +83,17 @@ if __name__ == "__main__":
         axis=0).reshape(1, look_back, in_out_neurons) 
     Z = np.append(Z, sequence_, axis=0) #予測した株価をlook_backに加える
     predicted.append(y_.reshape(-1)) 
-
+  """
+  
+  
+  predicted = np.array(predicted)
+  predicted = predicted * (close_max - close_min) + close_min # 正規化を元に戻す
+  y_test = y_test * (close_max - close_min) + close_min # 正規化を元に戻す
+  
+  # calculate root mean squared error
+  testScore = math.sqrt(mean_squared_error(y_test[:,0], predicted[:,0]))
+  print('Test Score: %.2f RMSE' % (testScore))
+  
   result = pandas.DataFrame(predicted)
   result.columns = ['predict']
   result['actual'] = y_test
